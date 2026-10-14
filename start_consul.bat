@@ -1,4 +1,13 @@
 @echo off
+if not defined DB_USERNAME (
+    echo ERRO: defina a variavel de ambiente DB_USERNAME antes de executar este script.
+    exit /b 1
+)
+if not defined DB_PASSWORD (
+    echo ERRO: defina a variavel de ambiente DB_PASSWORD antes de executar este script.
+    exit /b 1
+)
+
 echo Iniciando Consul...
 start "Consul" consul agent -dev
 echo Aguardando Consul iniciar...
@@ -50,6 +59,26 @@ consul kv put config/currency-api/server.port "8100"
 consul kv put config/currency-api/spring.datasource.url "jdbc:postgresql://localhost/db_currency"
 consul kv put config/currency-api/spring.datasource.username "postgres"
 consul kv put config/currency-api/spring.datasource.password "postgres"
+consul kv put config/currency-api/bcb.quote-date "05-30-2025"
+
+REM Configuração do Retry para o Banco Central
+consul kv put config/currency-api/resilience4j.retry.instances.bcb-api.max-attempts "3"
+consul kv put config/currency-api/resilience4j.retry.instances.bcb-api.wait-duration "1s"
+consul kv put config/currency-api/resilience4j.retry.instances.bcb-api.ignore-exceptions[0] "io.github.resilience4j.circuitbreaker.CallNotPermittedException"
+consul kv put config/currency-api/resilience4j.retry.retry-aspect-order "100"
+
+REM Configuração do Circuit Breaker para o Banco Central
+consul kv put config/currency-api/resilience4j.circuitbreaker.instances.bcb-api.sliding-window-type "COUNT_BASED"
+consul kv put config/currency-api/resilience4j.circuitbreaker.instances.bcb-api.sliding-window-size "5"
+consul kv put config/currency-api/resilience4j.circuitbreaker.instances.bcb-api.minimum-number-of-calls "5"
+consul kv put config/currency-api/resilience4j.circuitbreaker.instances.bcb-api.failure-rate-threshold "50"
+consul kv put config/currency-api/resilience4j.circuitbreaker.instances.bcb-api.wait-duration-in-open-state "100s"
+consul kv put config/currency-api/resilience4j.circuitbreaker.circuit-breaker-aspect-order "101"
+
+REM Configuração do cache Caffeine para as cotações do Banco Central
+consul kv put config/currency-api/spring.cache.type "caffeine"
+consul kv put config/currency-api/spring.cache.cache-names "bcb-quotes"
+consul kv put config/currency-api/spring.cache.caffeine.spec "maximumSize=1000,expireAfterWrite=10m"
 
 echo.
 echo Consul iniciado e configuracoes carregadas!
