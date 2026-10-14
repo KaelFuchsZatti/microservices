@@ -1,46 +1,73 @@
-# Currency API
+# Currency API 💱
 
-Microsserviço responsável pela consulta de cotações de moedas, desenvolvido com **Spring Boot** seguindo o padrão arquitetural utilizado no `product-api`.
+Microsserviço de alta disponibilidade responsável pela consulta e conversão de cotações de moedas em tempo real, desenvolvido com **Spring Boot** e arquitetura de microsserviços.
 
-## Tecnologias
+---
 
-* Java / Spring Boot
-* Spring Data JPA
-* PostgreSQL
-* Flyway
-* HashiCorp Consul
-* Maven
-* REST API
+## 🚀 Tecnologias e Ferramentas
 
-## Arquitetura
+* **Linguagem / Framework:** Java | Spring Boot (REST API)
+* **Persistência de Dados:** Spring Data JPA | PostgreSQL
+* **Migrations:** Flyway
+* **Service Discovery & Config:** HashiCorp Consul
+* **Resiliência:** Resilience4j (Circuit Breaker / Rate Limiter / Retry / Fallback)
+* **Build Tool:** Maven
+
+---
+
+## 🏗️ Arquitetura e Estrutura
 
 ```text
 br.edu.atitus.currencyapi
-├── controllers
-├── dtos
-├── entities
-├── repositories
-└── services
+├── configs/          # Configurações globais (Consul, Beans, WebClient/RestTemplate)
+├── controllers/      # Endpoints REST da aplicação
+├── dtos/             # Objetos de Transferência de Dados
+├── entities/         # Mapeamentos e entidades de banco de dados
+├── repositories/     # Interfaces de acesso a dados (Spring Data JPA)
+└── services/         # Regras de negócio e integração com APIs externas
+
 ```
 
-Principais componentes:
+### Componentes Principais:
 
-* `CurrencyEntity`
-* `CurrencyRepository`
-* `CurrencyResponse`
-* `CurrencyService`
-* `CurrencyServiceJpa`
-* `CurrencyController`
+* **`CurrencyController`**: Expõe os endpoints REST de consulta de cotação.
+* **`CurrencyService`**: Interface e implementação com suporte a padrões de resiliência e fallback.
+* **`CurrencyRepository`**: Interface JPA para acesso e cache local de moedas.
+* **External Client**: Módulo de integração com provedores externos de câmbio.
 
-## API
+---
 
-### Consultar cotação
+## 🔄 Integração Externa & Resiliência
+
+O microsserviço consome uma **API externa de câmbio** para obter cotações em tempo real. Para garantir a tolerância a falhas e alta disponibilidade da aplicação, foram aplicados **Resilience Patterns**:
+
+* **Circuit Breaker:** Interrompe chamadas à API externa se a taxa de falhas exceder o limite, evitando sobrecarga no sistema.
+* **Retry Pattern:** Tenta reexecutar automaticamente requisições que falharam por instabilidades temporárias.
+* **Fallback Methods:** Retorna respostas padrão ou dados em cache caso a API externa fique indisponível, garantindo degradação graciosa.
+
+---
+
+## 📌 API Endpoints
+
+### Consultar Cotação
+
+Retorna a taxa de conversão entre a moeda de origem (`source`) e a moeda de destino (`target`).
+
+* **URL:** `GET /currencies`
+* **Parâmetros de Query:**
+* `source` (obrigatório): Código da moeda de origem (ex: `USD`)
+* `target` (obrigatório): Código da moeda de destino (ex: `BRL`)
+
+
+
+#### Exemplo de Requisição:
 
 ```http
-GET /currencies?source=USD&target=BRL
+GET http://localhost:8100/currencies?source=USD&target=BRL
+
 ```
 
-Exemplo de resposta:
+#### Exemplo de Resposta:
 
 ```json
 {
@@ -49,55 +76,49 @@ Exemplo de resposta:
   "conversionRate": 5.25,
   "environment": "Currency API running in Port: 8100"
 }
+
 ```
 
-## Configuração
+---
 
-A aplicação utiliza **HashiCorp Consul** para configuração externalizada.
+## ⚙️ Configuração do Ambiente
 
-A porta obrigatória é:
+A aplicação utiliza o **HashiCorp Consul** para gerenciamento de configurações externalizadas e descoberta de serviços.
 
-```text
-8100
+### Banco de Dados
+
+| Configuração | Valor |
+| --- | --- |
+| **SGBD** | PostgreSQL |
+| **Database** | `db_currency` |
+| **Migrações** | Flyway (executadas automaticamente na inicialização) |
+
+> **Nota:** As credenciais e configurações de conexão com o PostgreSQL e com a API Externa devem estar devidamente cadastradas no Consul.
+
+---
+
+## 🛠️ Como Executar a Aplicação
+
+1. **Inicie os serviços de infraestrutura:**
+* Garanta que o **PostgreSQL** esteja rodando com o banco `db_currency` criado.
+* Suba o servidor do **HashiCorp Consul**.
+
+
+2. **Carregue as configurações:**
+* Disponibilize as propriedades de configuração do `currency-api` no Consul.
+
+
+3. **Inicie a aplicação:**
+```bash
+mvn spring-boot:run
+
 ```
 
-As configurações de banco de dados e demais propriedades necessárias devem estar disponíveis no Consul.
 
-## Banco de Dados
-
-| Configuração | Valor         |
-| ------------ | ------------- |
-| SGBD         | PostgreSQL    |
-| Banco        | `db_currency` |
-| Migrações    | Flyway        |
-
-Os scripts de criação e carga inicial devem estar configurados no Flyway.
-
-## Execução
-
-Para executar o projeto:
-
-1. Inicie o HashiCorp Consul.
-2. Disponibilize as configurações do `currency-api` no Consul.
-3. Garanta que o PostgreSQL esteja disponível.
-4. Execute o `currency-api`.
-5. Acesse:
-
+*A aplicação subirá por padrão na porta **8100**.*
+4. **Teste o endpoint:**
+Acesse no navegador ou cliente HTTP:
 ```text
 http://localhost:8100/currencies?source=USD&target=BRL
+
 ```
-
-## Repositório
-
-O repositório deve conter:
-
-```text
-/
-├── product-api/
-├── currency-api/
-└── script-consul.bat
-```
-
-Além dos microsserviços, devem estar presentes os arquivos de configuração e scripts de migração necessários para execução do ambiente.
-
-> **Importante:** os nomes de packages, classes, métodos, atributos e endpoints devem seguir exatamente os contratos definidos na atividade.
