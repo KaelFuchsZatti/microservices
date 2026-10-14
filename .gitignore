@@ -1,19 +1,8 @@
-# Maven
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-# IntelliJ IDEA
-.idea/
-*.iws
+**/.idea/
+**/target/
+**/build/
 *.iml
-*.ipr
-out/
-
-# Sistema operacional
-.DS_Store
-Thumbs.db
-
-# Logs
+*.class
 *.log
+.env
+.env.*
